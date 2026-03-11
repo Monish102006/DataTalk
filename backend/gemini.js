@@ -154,13 +154,15 @@ async function queryGemini(question, tableName = 'superstore_sales', history = [
     }
   });
 
-  // Try each key, with retries per key
-  const maxAttempts = apiKeys.length * 2; // cycle through all keys twice
+  // Phase 1: Quick scan — try each key with minimal delay to find one that works
+  // Phase 2: If all fail, retry with longer delays
+  const totalKeys = apiKeys.length;
   let lastError;
 
-  for (let attempt = 0; attempt < maxAttempts; attempt++) {
+  // Phase 1: Quick scan through all keys (500ms between each)
+  for (let i = 0; i < totalKeys; i++) {
     const key = getCurrentKey(apiKeys);
-    const keyLabel = `Key #${(currentKeyIndex % apiKeys.length) + 1}/${apiKeys.length}`;
+    const keyLabel = `Key #${(currentKeyIndex % totalKeys) + 1}/${totalKeys}`;
 
     const response = await fetch(`${GEMINI_API_URL}?key=${key}`, {
       method: 'POST',
@@ -170,11 +172,9 @@ async function queryGemini(question, tableName = 'superstore_sales', history = [
 
     if (response.ok) {
       const data = await response.json();
-
       if (!data.candidates || !data.candidates[0]?.content?.parts?.[0]?.text) {
         throw new Error('Unexpected Gemini API response structure');
       }
-
       const rawText = data.candidates[0].content.parts[0].text;
       console.log(`✅ Success with ${keyLabel}`);
       return parseGeminiResponse(rawText);
@@ -183,21 +183,75 @@ async function queryGemini(question, tableName = 'superstore_sales', history = [
     const errBody = await response.text();
 
     if (response.status === 429 || response.status === 503) {
-      // Rotate to next key immediately
-      const nextKey = getNextKey(apiKeys);
-      const nextLabel = `Key #${(currentKeyIndex % apiKeys.length) + 1}/${apiKeys.length}`;
-      console.log(`⏳ ${keyLabel} rate limited (${response.status}). Rotating to ${nextLabel}... (attempt ${attempt + 1}/${maxAttempts})`);
-
-      // Small delay before retry with new key
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      getNextKey(apiKeys);
+      console.log(`⚡ ${keyLabel} rate limited. Trying next key... (${i + 1}/${totalKeys})`);
+      await new Promise(resolve => setTimeout(resolve, 500));
       lastError = errBody;
+      continue;
+    }
+
+    // Non-rate-limit error (e.g. invalid key) — skip this key
+    if (response.status === 400 || response.status === 403) {
+      getNextKey(apiKeys);
+      console.log(`⚠️ ${keyLabel} invalid/forbidden. Skipping...`);
       continue;
     }
 
     throw new Error(`Gemini API error (${response.status}): ${errBody}`);
   }
 
-  throw new Error(`All ${apiKeys.length} API keys exhausted after ${maxAttempts} attempts. Last error: ${lastError}`);
+  // Phase 2: All keys failed quick scan. Wait and retry with the API's suggested delay.
+  console.log(`⏳ All ${totalKeys} keys rate limited on quick scan. Starting retry with backoff...`);
+
+  for (let cycle = 0; cycle < 2; cycle++) {
+    // Parse retry delay from last error
+    let waitTime = 20000; // default 20s
+    try {
+      const errJson = JSON.parse(lastError);
+      const retryInfo = errJson.error?.details?.find(d => d['@type']?.includes('RetryInfo'));
+      const retrySeconds = parseFloat(retryInfo?.retryDelay?.replace('s', '')) || 0;
+      if (retrySeconds > 0) waitTime = Math.ceil(retrySeconds * 1000) + 2000; // add 2s buffer
+    } catch (e) { /* use default */ }
+
+    console.log(`⏳ Waiting ${(waitTime/1000).toFixed(0)}s before retry cycle ${cycle + 1}...`);
+    await new Promise(resolve => setTimeout(resolve, waitTime));
+
+    // Try all keys again
+    for (let i = 0; i < totalKeys; i++) {
+      const key = getCurrentKey(apiKeys);
+      const keyLabel = `Key #${(currentKeyIndex % totalKeys) + 1}/${totalKeys}`;
+
+      const response = await fetch(`${GEMINI_API_URL}?key=${key}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: requestBody
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        if (!data.candidates || !data.candidates[0]?.content?.parts?.[0]?.text) {
+          throw new Error('Unexpected Gemini API response structure');
+        }
+        const rawText = data.candidates[0].content.parts[0].text;
+        console.log(`✅ Success with ${keyLabel} (retry cycle ${cycle + 1})`);
+        return parseGeminiResponse(rawText);
+      }
+
+      const errBody = await response.text();
+      getNextKey(apiKeys);
+      lastError = errBody;
+
+      if (response.status === 429 || response.status === 503) {
+        await new Promise(resolve => setTimeout(resolve, 500));
+        continue;
+      }
+      if (response.status === 400 || response.status === 403) continue;
+
+      throw new Error(`Gemini API error (${response.status}): ${errBody}`);
+    }
+  }
+
+  throw new Error(`All ${totalKeys} API keys exhausted. Please wait a few minutes or add fresh API keys. Last error: ${lastError}`);
 }
 
 async function retryWithError(originalQuestion, sqlError, tableName = 'superstore_sales') {

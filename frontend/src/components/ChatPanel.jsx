@@ -36,7 +36,6 @@ export default function ChatPanel({ messages, onSendMessage, isLoading }) {
 
   const handleVoiceTranscript = (transcript, isFinal) => {
     if (transcript === '__MIC_DENIED__') {
-      // Mic permission denied — show as a system message
       setVoiceStatus('denied');
       return;
     }
@@ -53,11 +52,11 @@ export default function ChatPanel({ messages, onSendMessage, isLoading }) {
   const showSuggestions = messages.length === 0;
 
   return (
-    <div className="flex flex-col h-full bg-dt-bg-primary">
+    <div className="flex flex-col h-full transition-colors duration-300" style={{ background: 'var(--bg-primary)' }}>
       {/* Chat header */}
-      <div className="px-5 py-4 border-b border-white/[0.06]">
-        <h2 className="text-sm font-sora font-semibold text-dt-text-primary flex items-center gap-2">
-          <svg className="w-4 h-4 text-dt-accent-cyan" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <div className="px-5 py-4 border-b border-[var(--border-subtle)]">
+        <h2 className="text-sm font-sora font-semibold flex items-center gap-2" style={{ color: 'var(--text-primary)' }}>
+          <svg className="w-4 h-4" style={{ color: 'var(--accent-cyan)' }} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <path d="m3 21 1.9-5.7a8.5 8.5 0 1 1 3.8 3.8z" />
           </svg>
           Chat
@@ -69,15 +68,15 @@ export default function ChatPanel({ messages, onSendMessage, isLoading }) {
         {showSuggestions && (
           <div className="space-y-3">
             <div className="text-center py-8">
-              <div className="w-12 h-12 mx-auto mb-4 rounded-xl bg-gradient-to-br from-dt-accent-cyan/20 to-dt-accent-green/10 flex items-center justify-center">
+              <div className="w-12 h-12 mx-auto mb-4 rounded-xl bg-gradient-to-br from-[var(--accent-cyan)]/20 to-[var(--accent-green)]/10 flex items-center justify-center">
                 <svg className="w-6 h-6 text-dt-accent-cyan" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M12 20h9" /><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z" />
                 </svg>
               </div>
-              <h3 className="text-base font-sora font-semibold text-dt-text-primary mb-1">
+              <h3 className="text-base font-sora font-semibold mb-1" style={{ color: 'var(--text-primary)' }}>
                 Ask anything about your data
               </h3>
-              <p className="text-xs text-dt-text-muted">
+              <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
                 I'll generate SQL, run it, and visualize the results
               </p>
             </div>
@@ -87,9 +86,10 @@ export default function ChatPanel({ messages, onSendMessage, isLoading }) {
                 <button
                   key={q}
                   onClick={() => { setInput(q); onSendMessage(q); }}
-                  className="px-3 py-1.5 text-xs rounded-full border border-white/10 text-dt-text-muted
-                    hover:border-dt-accent-cyan/40 hover:text-dt-accent-cyan hover:bg-dt-accent-cyan/5
+                  className="px-3 py-1.5 text-xs rounded-full
+                    hover:bg-[var(--bg-card)]
                     transition-all duration-200"
+                  style={{ border: '1px solid var(--border-medium)', color: 'var(--text-muted)' }}
                 >
                   {q}
                 </button>
@@ -104,7 +104,7 @@ export default function ChatPanel({ messages, onSendMessage, isLoading }) {
 
         {isLoading && (
           <div className="flex gap-3 items-start">
-            <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-dt-accent-cyan/20 to-dt-accent-green/10 flex items-center justify-center flex-shrink-0">
+            <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-[var(--accent-cyan)]/20 to-[var(--accent-green)]/10 flex items-center justify-center flex-shrink-0">
               <svg className="w-3.5 h-3.5 text-dt-accent-cyan" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M12 20h9" /><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z" />
               </svg>
@@ -138,7 +138,7 @@ export default function ChatPanel({ messages, onSendMessage, isLoading }) {
       )}
 
       {/* Input area */}
-      <div className="px-4 py-3 border-t border-white/[0.06]">
+      <div className="px-4 py-3 border-t border-[var(--border-subtle)]">
         <div className="flex gap-2 items-center glass-card px-3 py-2">
           <input
             ref={inputRef}
@@ -147,8 +147,8 @@ export default function ChatPanel({ messages, onSendMessage, isLoading }) {
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder="Ask a question about your data..."
-            className="flex-1 bg-transparent text-sm text-dt-text-primary placeholder:text-dt-text-muted/50
-              outline-none font-inter"
+            className="flex-1 bg-transparent text-sm outline-none font-inter"
+            style={{ color: 'var(--text-primary)' }}
             disabled={isLoading}
           />
 
@@ -162,9 +162,9 @@ export default function ChatPanel({ messages, onSendMessage, isLoading }) {
             disabled={!input.trim() || isLoading}
             className="w-9 h-9 rounded-lg flex items-center justify-center transition-all duration-200
               disabled:opacity-30 disabled:cursor-not-allowed
-              bg-gradient-to-r from-dt-accent-cyan to-dt-accent-green/80
-              hover:shadow-[0_0_20px_rgba(0,212,255,0.3)]
-              text-dt-bg-primary"
+              bg-gradient-to-r from-[var(--accent-cyan)] to-[var(--accent-green)]
+              hover:shadow-[0_0_20px_var(--shadow-glow)]
+              text-white"
           >
             <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
               <path d="m5 12h14" /><path d="m12 5 7 7-7 7" />
@@ -185,15 +185,15 @@ function MessageBubble({ message }) {
       {/* Avatar */}
       <div className={`w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 ${
         isUser
-          ? 'bg-gradient-to-br from-dt-accent-cyan/30 to-dt-accent-cyan/10'
-          : 'bg-gradient-to-br from-dt-accent-cyan/20 to-dt-accent-green/10'
+          ? 'bg-gradient-to-br from-[var(--accent-cyan)]/30 to-[var(--accent-cyan)]/10'
+          : 'bg-gradient-to-br from-[var(--accent-cyan)]/20 to-[var(--accent-green)]/10'
       }`}>
         {isUser ? (
-          <svg className="w-3.5 h-3.5 text-dt-accent-cyan" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <svg className="w-3.5 h-3.5" style={{ color: 'var(--accent-cyan)' }} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" />
           </svg>
         ) : (
-          <svg className="w-3.5 h-3.5 text-dt-accent-cyan" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <svg className="w-3.5 h-3.5" style={{ color: 'var(--accent-cyan)' }} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <path d="M12 20h9" /><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z" />
           </svg>
         )}
@@ -202,27 +202,33 @@ function MessageBubble({ message }) {
       {/* Bubble */}
       <div className={`max-w-[85%] ${
         isUser
-          ? 'bg-dt-accent-cyan/10 border border-dt-accent-cyan/20 rounded-2xl rounded-tr-md px-4 py-2.5'
+          ? 'rounded-2xl rounded-tr-md px-4 py-2.5'
           : `glass-card rounded-2xl rounded-tl-md px-4 py-2.5 ${message.isError ? 'border-red-500/20' : ''}`
-      }`}>
-        <p className={`text-sm leading-relaxed ${
-          message.isError ? 'text-red-400/90' : 'text-dt-text-primary/90'
-        }`}>
+      }`}
+        style={isUser ? {
+          background: 'var(--user-bubble-bg)',
+          border: '1px solid var(--user-bubble-border)'
+        } : undefined}
+      >
+        <p className="text-sm leading-relaxed"
+          style={{ color: message.isError ? 'rgba(248,113,113,0.9)' : 'var(--text-primary)' }}>
           {message.content}
         </p>
 
         {/* SQL query toggle */}
         {message.sql_query && (
-          <div className="mt-2 pt-2 border-t border-white/[0.04]">
+          <div className="mt-2 pt-2 border-t border-[var(--border-subtle)]">
             <button
               onClick={() => setShowSql(!showSql)}
-              className="text-[10px] text-dt-text-muted hover:text-dt-accent-cyan transition-colors flex items-center gap-1"
+              className="text-[10px] transition-colors flex items-center gap-1"
+              style={{ color: 'var(--text-muted)' }}
             >
               <svg className={`w-3 h-3 transition-transform ${showSql ? 'rotate-90' : ''}`} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="m9 18 6-6-6-6" /></svg>
               {showSql ? 'Hide' : 'Show'} SQL query
             </button>
             {showSql && (
-              <pre className="mt-2 text-[10px] font-mono text-dt-accent-cyan/70 bg-black/20 rounded-lg p-2.5 overflow-x-auto whitespace-pre-wrap">
+              <pre className="mt-2 text-[10px] font-mono text-dt-accent-cyan/70 rounded-lg p-2.5 overflow-x-auto whitespace-pre-wrap"
+                style={{ background: 'var(--code-bg)' }}>
                 {message.sql_query}
               </pre>
             )}

@@ -114,9 +114,14 @@ export default function VoiceButton({ onTranscript, disabled }) {
       {/* Toast */}
       {toast && (
         <div
-          className={`fixed bottom-24 left-1/2 z-50 px-4 py-2 rounded-lg text-sm font-inter
-            bg-dt-bg-secondary border border-dt-accent-cyan/30 text-dt-text-primary shadow-lg
+          className={`fixed bottom-24 left-1/2 z-50 px-4 py-2 rounded-lg text-sm font-inter shadow-lg
             ${toast.leaving ? 'toast-exit' : 'toast-enter'}`}
+          style={{
+            background: 'var(--bg-secondary)',
+            border: '1px solid var(--accent-cyan)',
+            color: 'var(--text-primary)',
+            borderColor: 'color-mix(in srgb, var(--accent-cyan) 30%, transparent)'
+          }}
         >
           {toast.message}
         </div>
@@ -127,8 +132,10 @@ export default function VoiceButton({ onTranscript, disabled }) {
         {/* Tooltip */}
         {status === 'idle' && (
           <div className="absolute -top-9 left-1/2 -translate-x-1/2 px-2 py-1 rounded text-xs
-            bg-dt-bg-secondary border border-white/10 text-dt-text-muted whitespace-nowrap
-            opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none">
+            text-dt-text-muted whitespace-nowrap
+            opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none"
+            style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-medium)' }}
+          >
             Click to speak
           </div>
         )}
@@ -151,10 +158,10 @@ export default function VoiceButton({ onTranscript, disabled }) {
           disabled={disabled && status === 'idle'}
           className={`relative z-10 w-9 h-9 rounded-lg flex items-center justify-center transition-all duration-200
             ${status === 'idle'
-              ? 'text-dt-text-muted border border-white/10 hover:border-dt-accent-cyan/40 hover:text-dt-accent-cyan'
+              ? 'text-dt-text-muted border border-[var(--border-medium)] hover:border-dt-accent-cyan hover:text-dt-accent-cyan'
               : status === 'listening'
                 ? 'text-red-500 border border-red-500/40 bg-red-500/10 animate-pulse'
-                : 'text-dt-accent-cyan border border-dt-accent-cyan/40 bg-dt-accent-cyan/10'
+                : 'text-dt-accent-cyan border border-[var(--accent-cyan)] bg-[var(--bg-card)]'
             }`}
           aria-label={status === 'idle' ? 'Start voice input' : status === 'listening' ? 'Stop listening' : 'Processing'}
         >

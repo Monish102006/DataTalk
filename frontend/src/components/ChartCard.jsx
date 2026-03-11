@@ -9,10 +9,16 @@ const COLORS = ['#00d4ff', '#00ff88', '#ff6b6b', '#ffd93d', '#c084fc', '#fb923c'
 const CustomTooltip = ({ active, payload, label }) => {
   if (!active || !payload?.length) return null;
   return (
-    <div className="bg-[#0d1526] border border-white/10 rounded-lg px-3 py-2 shadow-xl">
-      <p className="text-dt-accent-cyan text-xs font-semibold mb-1">{label}</p>
+    <div style={{
+      background: 'var(--tooltip-bg)',
+      border: '1px solid var(--tooltip-border)',
+      borderRadius: '8px',
+      padding: '8px 12px',
+      boxShadow: '0 8px 24px rgba(0,0,0,0.15)'
+    }}>
+      <p style={{ color: 'var(--accent-cyan)', fontSize: 12, fontWeight: 600, marginBottom: 4 }}>{label}</p>
       {payload.map((p, i) => (
-        <p key={i} className="text-xs text-dt-text-primary">
+        <p key={i} style={{ color: 'var(--text-primary)', fontSize: 12 }}>
           <span className="inline-block w-2 h-2 rounded-full mr-1.5" style={{ backgroundColor: p.color }} />
           {p.name}: <span className="font-mono font-medium">{typeof p.value === 'number' ? p.value.toLocaleString() : p.value}</span>
         </p>
@@ -21,16 +27,31 @@ const CustomTooltip = ({ active, payload, label }) => {
   );
 };
 
+function getThemeColors() {
+  const isLight = document.documentElement.getAttribute('data-theme') === 'light';
+  return {
+    axisTick: isLight ? '#7a8599' : '#5a6a85',
+    axisLine: isLight ? 'rgba(0,0,0,0.08)' : 'rgba(255,255,255,0.06)',
+    grid: isLight ? 'rgba(0,0,0,0.05)' : 'rgba(255,255,255,0.04)',
+    tableBorder: isLight ? 'rgba(0,0,0,0.06)' : 'rgba(255,255,255,0.06)',
+    tableHeaderBg: isLight ? '#f0f3f8' : '#0a1020',
+    pieStroke: isLight ? 'rgba(255,255,255,0.9)' : 'rgba(7,11,20,0.8)',
+    legendColor: isLight ? '#7a8599' : '#5a6a85',
+  };
+}
+
 function renderChart(chartType, data, xKey, yKey) {
+  const tc = getThemeColors();
+
   const commonAxisProps = {
-    tick: { fill: '#5a6a85', fontSize: 11, fontFamily: 'IBM Plex Mono' },
-    axisLine: { stroke: 'rgba(255,255,255,0.06)' },
+    tick: { fill: tc.axisTick, fontSize: 11, fontFamily: 'IBM Plex Mono' },
+    axisLine: { stroke: tc.axisLine },
     tickLine: false
   };
 
   const gridProps = {
     strokeDasharray: '3 3',
-    stroke: 'rgba(255,255,255,0.04)'
+    stroke: tc.grid
   };
 
   switch (chartType) {
@@ -40,17 +61,17 @@ function renderChart(chartType, data, xKey, yKey) {
           <AreaChart data={data} margin={{ top: 5, right: 10, bottom: 5, left: 10 }}>
             <defs>
               <linearGradient id="lineGrad" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#00d4ff" stopOpacity={0.3} />
-                <stop offset="95%" stopColor="#00d4ff" stopOpacity={0} />
+                <stop offset="5%" stopColor="var(--accent-cyan)" stopOpacity={0.3} />
+                <stop offset="95%" stopColor="var(--accent-cyan)" stopOpacity={0} />
               </linearGradient>
             </defs>
             <CartesianGrid {...gridProps} />
             <XAxis dataKey={xKey} {...commonAxisProps} />
             <YAxis {...commonAxisProps} />
             <Tooltip content={<CustomTooltip />} />
-            <Area type="monotone" dataKey={yKey} stroke="#00d4ff" strokeWidth={2.5}
-              fill="url(#lineGrad)" dot={{ r: 3, fill: '#00d4ff', strokeWidth: 0 }}
-              activeDot={{ r: 5, fill: '#00d4ff', stroke: '#0d1526', strokeWidth: 2 }} />
+            <Area type="monotone" dataKey={yKey} stroke="var(--accent-cyan)" strokeWidth={2.5}
+              fill="url(#lineGrad)" dot={{ r: 3, fill: 'var(--accent-cyan)', strokeWidth: 0 }}
+              activeDot={{ r: 5, fill: 'var(--accent-cyan)', stroke: 'var(--bg-primary)', strokeWidth: 2 }} />
           </AreaChart>
         </ResponsiveContainer>
       );
@@ -61,8 +82,8 @@ function renderChart(chartType, data, xKey, yKey) {
           <BarChart data={data} margin={{ top: 5, right: 10, bottom: 5, left: 10 }}>
             <defs>
               <linearGradient id="barGrad" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="#00d4ff" stopOpacity={0.9} />
-                <stop offset="100%" stopColor="#00d4ff" stopOpacity={0.3} />
+                <stop offset="0%" stopColor="var(--accent-cyan)" stopOpacity={0.9} />
+                <stop offset="100%" stopColor="var(--accent-cyan)" stopOpacity={0.3} />
               </linearGradient>
             </defs>
             <CartesianGrid {...gridProps} />
@@ -74,25 +95,34 @@ function renderChart(chartType, data, xKey, yKey) {
         </ResponsiveContainer>
       );
 
-    case 'pie':
+    case 'pie': {
+      const MAX_SLICES = 8;
+      let pieData = data;
+      if (data.length > MAX_SLICES) {
+        const sorted = [...data].sort((a, b) => Math.abs(Number(b[yKey]) || 0) - Math.abs(Number(a[yKey]) || 0));
+        const top = sorted.slice(0, MAX_SLICES - 1);
+        const otherTotal = sorted.slice(MAX_SLICES - 1).reduce((sum, r) => sum + (Number(r[yKey]) || 0), 0);
+        pieData = [...top, { [xKey]: 'Other', [yKey]: otherTotal }];
+      }
       return (
-        <ResponsiveContainer width="100%" height={260}>
+        <ResponsiveContainer width="100%" height={280}>
           <PieChart>
-            <Pie data={data} dataKey={yKey} nameKey={xKey} cx="50%" cy="45%"
+            <Pie data={pieData} dataKey={yKey} nameKey={xKey} cx="50%" cy="45%"
               outerRadius={85} innerRadius={40}
-              stroke="rgba(7,11,20,0.8)" strokeWidth={2}
-              label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-              labelLine={{ stroke: '#5a6a85' }}
+              stroke={tc.pieStroke} strokeWidth={2}
+              label={({ name, percent }) => percent > 0.04 ? `${name.length > 12 ? name.slice(0, 10) + '…' : name} ${(percent * 100).toFixed(0)}%` : ''}
+              labelLine={{ stroke: tc.axisTick, strokeWidth: 1 }}
             >
-              {data.map((_, i) => (
+              {pieData.map((_, i) => (
                 <Cell key={i} fill={COLORS[i % COLORS.length]} />
               ))}
             </Pie>
             <Tooltip content={<CustomTooltip />} />
-            <Legend wrapperStyle={{ fontSize: 11, fontFamily: 'IBM Plex Mono', color: '#5a6a85' }} />
+            <Legend wrapperStyle={{ fontSize: 11, fontFamily: 'IBM Plex Mono', color: tc.legendColor }} />
           </PieChart>
         </ResponsiveContainer>
       );
+    }
 
     case 'scatter':
       return (
@@ -101,8 +131,8 @@ function renderChart(chartType, data, xKey, yKey) {
             <CartesianGrid {...gridProps} />
             <XAxis dataKey={xKey} name={xKey} {...commonAxisProps} />
             <YAxis dataKey={yKey} name={yKey} {...commonAxisProps} />
-            <Tooltip content={<CustomTooltip />} cursor={{ strokeDasharray: '3 3', stroke: 'rgba(255,255,255,0.1)' }} />
-            <Scatter data={data} fill="#00d4ff">
+            <Tooltip content={<CustomTooltip />} cursor={{ strokeDasharray: '3 3', stroke: tc.axisLine }} />
+            <Scatter data={data} fill="var(--accent-cyan)">
               {data.map((_, i) => (
                 <Cell key={i} fill={COLORS[i % COLORS.length]} />
               ))}
@@ -116,9 +146,10 @@ function renderChart(chartType, data, xKey, yKey) {
         <div className="overflow-auto max-h-[260px]">
           <table className="w-full text-xs font-mono">
             <thead>
-              <tr className="border-b border-white/10">
+              <tr style={{ borderBottom: `1px solid ${tc.tableBorder}` }}>
                 {Object.keys(data[0] || {}).map(key => (
-                  <th key={key} className="text-left py-2 px-3 text-dt-text-muted font-medium sticky top-0 bg-[#0a1020]">
+                  <th key={key} className="text-left py-2 px-3 text-dt-text-muted font-medium sticky top-0"
+                    style={{ background: tc.tableHeaderBg }}>
                     {key}
                   </th>
                 ))}
@@ -126,7 +157,8 @@ function renderChart(chartType, data, xKey, yKey) {
             </thead>
             <tbody>
               {data.map((row, i) => (
-                <tr key={i} className="border-b border-white/[0.03] hover:bg-white/[0.02]">
+                <tr key={i} style={{ borderBottom: `1px solid ${tc.tableBorder}` }}
+                  className="hover:bg-[var(--bg-card)] transition-colors">
                   {Object.values(row).map((val, j) => (
                     <td key={j} className="py-1.5 px-3 text-dt-text-primary/80">
                       {typeof val === 'number' ? val.toLocaleString() : val}
@@ -149,11 +181,11 @@ export default function ChartCard({ chart, index }) {
 
   return (
     <div
-      className="glass-card gradient-border p-5 animate-fade-in-up"
+      className="glass-card gradient-border p-5 animate-fade-in-up transition-colors duration-300"
       style={{ animationDelay: `${index * 100}ms` }}
     >
       {/* Title */}
-      <h3 className="text-sm font-sora font-semibold text-dt-text-primary mb-4 flex items-center gap-2">
+      <h3 className="text-sm font-sora font-semibold mb-4 flex items-center gap-2" style={{ color: 'var(--text-primary)' }}>
         <span className={`w-2 h-2 rounded-full ${
           chart_type === 'line' ? 'bg-dt-accent-cyan' :
           chart_type === 'bar' ? 'bg-dt-accent-green' :
@@ -162,6 +194,7 @@ export default function ChartCard({ chart, index }) {
           'bg-dt-text-muted'
         }`} />
         {title}
+        <span className="ml-auto text-[10px] font-mono uppercase tracking-wider" style={{ color: 'var(--text-muted)', opacity: 0.6 }}>{chart_type}</span>
       </h3>
 
       {/* Chart */}
@@ -169,7 +202,8 @@ export default function ChartCard({ chart, index }) {
 
       {/* Insight */}
       {insight && (
-        <p className="text-xs text-dt-text-muted mt-4 pt-3 border-t border-white/[0.04] leading-relaxed">
+        <p className="text-xs mt-4 pt-3 leading-relaxed"
+          style={{ borderTop: '1px solid var(--border-subtle)', color: 'var(--text-muted)' }}>
           💡 {insight}
         </p>
       )}

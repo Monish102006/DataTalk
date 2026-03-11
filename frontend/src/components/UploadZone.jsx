@@ -39,8 +39,8 @@ export default function UploadZone({ onUpload, isUploading }) {
         onClick={() => document.getElementById('csv-upload-input')?.click()}
         className={`relative rounded-xl border-2 border-dashed p-4 text-center cursor-pointer transition-all duration-300
           ${isDragging
-            ? 'border-dt-accent-cyan bg-dt-accent-cyan/5 scale-[1.02]'
-            : 'border-white/10 hover:border-white/20 hover:bg-white/[0.02]'
+            ? 'border-dt-accent-cyan bg-[var(--bg-card)] scale-[1.02]'
+            : 'border-[var(--border-medium)] hover:border-dt-text-muted hover:bg-[var(--bg-card)]'
           }
           ${isUploading ? 'pointer-events-none opacity-60' : ''}`}
       >

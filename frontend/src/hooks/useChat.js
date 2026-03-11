@@ -8,19 +8,6 @@ export function useChat() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  import('react').then(React => {
-    React.useEffect(() => {
-      fetch(`${API_BASE}/default-dashboard`)
-        .then(res => res.json())
-        .then(data => {
-          if (Array.isArray(data)) {
-            setCharts(data);
-          }
-        })
-        .catch(() => {});
-    }, []);
-  });
-
   const sendMessage = useCallback(async (question) => {
     if (!question.trim()) return;
 
@@ -56,18 +43,20 @@ export function useChat() {
       };
       setMessages(prev => [...prev, aiMsg]);
 
+      // Add all 4 chart types to dashboard if we got valid data
       if (data.can_answer && data.data && data.data.length > 0) {
-        const newChart = {
-          id: Date.now(),
-          chart_type: data.chart_type,
-          title: data.title,
+        const chartTypes = ['bar', 'line', 'scatter', 'pie'];
+        const newCharts = chartTypes.map((type, i) => ({
+          id: Date.now() + i,
+          chart_type: type,
+          title: data.title || question,
           data: data.data,
           x_key: data.x_key,
           y_key: data.y_key,
           insight: data.insight,
           sql_query: data.sql_query
-        };
-        setCharts(prev => [newChart, ...prev]);
+        }));
+        setCharts(prev => [...newCharts, ...prev]);
       }
     } catch (err) {
       const errMsg = {
